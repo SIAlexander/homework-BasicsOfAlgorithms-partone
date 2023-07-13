@@ -1,6 +1,6 @@
 package pro.sky.services;
 
-import pro.sky.exceptions.IndexOutException;
+import pro.sky.exceptions.*;
 
 import java.util.Arrays;
 import java.util.Objects;
@@ -8,91 +8,77 @@ import java.util.Objects;
 public class StringListImpl implements StringList {
 
     private final String[] arrayLists;
+    private int size;
 
-    public StringListImpl(int size) {
-        this.arrayLists = new String[size];
+    public StringListImpl() {
+        arrayLists = new String[10];
+    }
+
+    public StringListImpl(int initSize) {
+        arrayLists = new String[initSize];
     }
 
     @Override
     public String add(String item) {
-        if (arrayLists[size() - 1] != null) {
-            throw new IndexOutException();
-        }
-
-        for (int i = 0; i < arrayLists.length; i++) {
-            if (arrayLists[i] == null) {
-                arrayLists[i] = item;
-                break;
-            }
-        }
+        validateSize();
+        validateItem(item);
+        arrayLists[size++] = item;
         return item;
     }
 
     @Override
     public String add(int index, String item) {
-        if (index >= arrayLists.length) {
-            throw new IndexOutException();
-        }
-        if (arrayLists[index] == null) {
-            arrayLists[index] = item;
+        validateSize();
+        validateItem(item);
+        validateIndex(index);
+
+        if (index == size) {
+            arrayLists[size++] = item;
             return item;
         }
 
-        for (int j = arrayLists.length - 1; j >= 1; j--) {
-            arrayLists[j] = arrayLists[j - 1];
-        }
+        System.arraycopy(arrayLists, index, arrayLists, index + 1, size - index);
         arrayLists[index] = item;
+        size++;
+
         return item;
     }
 
     @Override
     public String set(int index, String item) {
-        if (index >= arrayLists.length) {
-            throw new IndexOutException();
-        }
+        validateIndex(index);
+        validateItem(item);
         arrayLists[index] = item;
         return item;
     }
 
     @Override
     public String remove(String item) {
-        for (int i = 0; i < arrayLists.length; i++) {
-            if (arrayLists[i] != item) {
-                throw new IndexOutException();
-            }
-            if (arrayLists[i] == item) {
-                arrayLists[i] = null;
-                break;
-            }
-        }
-        return item;
+        validateItem(item);
+        int index = indexOf(item);
+        return remove(index);
     }
 
     @Override
     public String remove(int index) {
-        if (index >= arrayLists.length || arrayLists[index] == null) {
-            throw new IndexOutException();
+        validateIndex(index);
+        String item = arrayLists[index];
+        if (index != size) {
+            System.arraycopy(arrayLists, index + 1, arrayLists, index, size - index);
         }
-        if (arrayLists[index] != null) {
-            arrayLists[index] = null;
-        }
-        return arrayLists[index];
+        size--;
+        return item;
     }
 
     @Override
     public boolean contains(String item) {
-        for (String arrayList : arrayLists) {
-            if (arrayList == item) {
-                return true;
-            }
-        }
-        return false;
+        return indexOf(item) != -1;
     }
 
     @Override
     public int indexOf(String item) {
-        for (int i = 0; i < arrayLists.length; i++) {
-            if (arrayLists[i] == item) {
+        for (int i = 0; i < size; i++) {
+            if (arrayLists[i].equals(item)) {
                 return i;
             }
         }
@@ -101,8 +87,8 @@ public class StringListImpl implements StringList {
 
     @Override
     public int lastIndexOf(String item) {
-        for (int i = arrayLists.length - 1; i >= 1; i--) {
-            if (arrayLists[i] == item) {
+        for (int i = size - 1; i >= 0; i--) {
+            if (arrayLists[i].equals(item)) {
                 return i;
             }
         }
@@ -111,56 +97,50 @@ public class StringListImpl implements StringList {
 
     @Override
     public String get(int index) {
-        if (index >= arrayLists.length) {
-            throw new IndexOutException();
-        }
+        validateIndex(index);
         return arrayLists[index];
     }
 
     @Override
     public boolean equals(StringList otherList) {
-        if (otherList == null) {
-            throw new IndexOutException();
-        }
-
-        int result = 0;
-        for (int i = 0; i < arrayLists.length; i++) {
-            if (Objects.equals(otherList.get(i), arrayLists[i]) && otherList.size() == arrayLists.length) {
-                result++;
-            }
-        }
-
-        return arrayLists.length == result;
+        return Arrays.equals(this.toArray(), otherList.toArray());
     }
 
     @Override
     public int size() {
-        return arrayLists.length;
+        return size;
     }
 
     @Override
     public boolean isEmpty() {
-        int result = 0;
-        for (String arrayList : arrayLists) {
-            if (arrayList == null) {
-                result++;
-                if (arrayLists.length == result) {
-                    return true;
-                }
-            }
-        }
-        return false;
+        return size == 0;
     }
 
     @Override
     public void clear() {
-        Arrays.fill(arrayLists, null);
+        size = 0;
     }
 
     @Override
     public String[] toArray() {
-        String[] arr = new String[arrayLists.length];
-        System.arraycopy(arrayLists, 0, arr, 0, arr.length);
-        return arr;
+        return Arrays.copyOf(arrayLists, size);
+    }
+
+    private void validateItem(String item) {
+        if (item == null) {
+            throw new NullItemException();
+        }
+    }
+
+    private void validateSize() {
+        if (size == arrayLists.length) {
+            throw new StorageIsFullException();
+        }
+    }
+
+    private void validateIndex(int index) {
+        if (index < 0 || index > 0) {
+            throw new InvalidIndexException();
+        }
     }
 }
